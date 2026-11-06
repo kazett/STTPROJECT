@@ -52,3 +52,6 @@ Spesifikasi: BIGUPDATE.md (v3.0.0 revisi). Downgrade target: Paper 1.20.1, Java 
 - Nama plugin SVC `voicechat` diambil dari `depend: [voicechat]` di plugin lama yang jalan di server. Belum dicek dari JAR SVC (tidak ada di sandbox).
 - `voicechat-api` 2.6.0 dipakai karena sama dengan versi lama. Cocokkan dengan versi SVC di server 1.20.1.
 - BELUM DIKOMPILASI: sandbox tidak punya Paper API 1.20.1, SVC API, Vosk, dan akses internet. Hanya dicek sintaks. Build lewat GitHub Actions (`.github/workflows/build.yml`) atau Maven lokal.
+
+## Fix build #1 (log GitHub Actions)
+- `VoiceManager.refreshGrammar`: `catch (IOException)` diganti `catch (Exception)` karena konstruktor `Recognizer` Vosk 0.3.45 tidak melempar `IOException` (error compile `exception java.io.IOException is never thrown`). Kerangka di BIGUPDATE bagian 8C punya kesalahan yang sama. Import `IOException` yang jadi tidak terpakai dihapus.

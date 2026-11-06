@@ -3,7 +3,6 @@ package id.stt.engine.voice;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import id.stt.engine.skill.SkillService;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +81,7 @@ public final class VoiceManager {
                     if (old != null) {
                         old.close();
                     }
-                } catch (IOException e) {
+                } catch (Exception e) {
                     log.warning("Gagal build grammar untuk " + name + ": " + e.getMessage());
                 }
             });
