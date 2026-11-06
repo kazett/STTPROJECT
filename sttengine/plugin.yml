@@ -1,0 +1,17 @@
+name: sttengine
+version: 3.0.0
+main: id.stt.engine.SttEngine
+api-version: '1.20'
+softdepend: [voicechat, ItemsAdder, MythicMobs, MythicLib]
+commands:
+  stt:
+    description: Menu STT (pilih ras, lihat skill) dan command admin
+    permission: stt.use
+    usage: /stt menu
+permissions:
+  stt.use:
+    description: Buka /stt menu
+    default: true
+  stt.admin:
+    description: addskill, removeskill, resetrace, reload, mana
+    default: op

@@ -1,0 +1,11 @@
+# sttengine - setting umum.
+# Angka skill (cost, cooldown, damage, dll) ada di config.yml plugin sttskill dan sttcustomskill.
+settings:
+  # Max mana flat untuk semua player
+  max-mana: 300
+  # Jeda regen mana setelah pakai skill (detik). Dipertahankan dari sistem lama.
+  mana-regen-delay: 3
+  # Jeda regen kalau mana sampai habis (detik). Dipertahankan dari sistem lama.
+  burnout-delay: 8
+  # true = beri warning kalau ItemsAdder tidak aktif. STT tetap jalan tanpa ItemsAdder.
+  itemsadder-integration: true

@@ -1,0 +1,5 @@
+name: sttskill
+version: 3.0.0
+main: id.stt.skill.SttSkill
+api-version: '1.20'
+depend: [sttengine]
