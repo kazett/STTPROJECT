@@ -68,3 +68,12 @@ Terdaftar di registry tapi TIDAK masuk list ras mana pun (Witch tetap 4 skill). 
 - Skill `teleport` yang disebut di project.md v2.3.7 TIDAK ada source-nya di zip, jadi tidak ikut.
 - Sound `stt:shinra_tensei` sudah ada di resource pack.
 - BELUM DIKOMPILASI / DITES. Perlu dicek di 1.20.1: `World.spawn(..., randomizeData, setup)` (summon warden) dan refleksi `WardenAi.setDigCooldown` (kalau gagal, diabaikan diam-diam).
+
+## v3.0.5 - damage tembus armor
+- Penyebab "gada dmg kalau pakai armor": `LivingEntity#damage` dipotong armor. Black Fire cuma 2 damage per tick-hit, meteor 16 sekali, jadi armor diamond/netherite menyerap hampir semuanya.
+- Baru: `TrueDamage` dipakai di Black Fire dan `Blast.explode` (meteor, fireball, shinra). Armor diabaikan, absorption (hati kuning) tetap dipotong dulu. Pemain creative/spectator dan target invulnerable dilewati. Damage yang membunuh lewat `damage()` biasa supaya kill credit dan totem tetap jalan.
+- `ignore-armor: true` di `plugins/sttskill/config.yml` (tulis manual kalau mau `false` = damage biasa).
+- Efek Wither Black Fire memang sudah tembus armor dari dulu.
+
+## v3.0.5 - fix build
+- GitHub Actions gagal compile `Summons.java:83`: di Paper 1.20.1 `World.spawn(Location, Class, boolean, Consumer)` minta `org.bukkit.util.Consumer`, bukan `java.util.function.Consumer`. Dibungkus lambda.

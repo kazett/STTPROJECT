@@ -80,7 +80,8 @@ public final class Summons implements Listener {
         if (!at.getBlock().isPassable() || !at.clone().add(0, 1, 0).getBlock().isPassable()) {
             at = base;
         }
-        T mob = at.getWorld().spawn(at, type, Warden.class.isAssignableFrom(type), setup);
+        // 1.20.1: parameter terakhir bertipe org.bukkit.util.Consumer, bukan java.util.function.Consumer
+        T mob = at.getWorld().spawn(at, type, Warden.class.isAssignableFrom(type), (org.bukkit.util.Consumer<T>) created -> setup.accept(created));
         mob.setPersistent(false);
         mob.setRemoveWhenFarAway(false);
         mob.setMetadata(META_KEY, new FixedMetadataValue(plugin, owner.getUniqueId().toString()));

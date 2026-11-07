@@ -65,6 +65,7 @@ public final class SttSkill extends JavaPlugin {
             saveConfig();
         }
 
+        TrueDamage.ignoreArmor = getConfig().getBoolean("ignore-armor", true);
         Bukkit.getPluginManager().registerEvents(new BlastGuard(), this);
         for (Skill skill : skills) {
             if (skill instanceof Listener listener) {

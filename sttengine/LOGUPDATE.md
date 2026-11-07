@@ -62,3 +62,10 @@ Spesifikasi: BIGUPDATE.md (v3.0.0 revisi). Downgrade target: Paper 1.20.1, Java 
 - Pack HUD harus versi 3.0.4 (lihat LOGUPDATE sttresourcepack). Hapus pack lama di client.
 - `/stt addskill <player> <id>` sudah bisa untuk SEMUA skill yang terdaftar di registry (tidak harus ada di list ras). Tab-complete juga menampilkan semua id terdaftar. Tidak ada perubahan kode di sini.
 - BELUM DITES di client / server asli.
+
+## v3.0.5 - voice lebih cepat (fast-cast)
+- Sebelumnya skill baru dicast dari hasil akhir Vosk, yaitu setelah pemain berhenti bicara + jeda deteksi diam. Itu delay yang terasa.
+- Baru: `VoiceManager.process` cek hasil parsial tiap paket audio. Begitu parsial sama persis dengan satu phrase milik pemain, skill langsung dicast dan recognizer di-`reset()` supaya hasil akhir tidak dicast dua kali.
+- Phrase yang merupakan awalan phrase lain (misal `meteor` vs `meteor storm`) tidak di-fast-cast, tetap tunggu hasil akhir.
+- `settings.fast-cast: true` di `plugins/sttengine/config.yml`. `false` = perilaku lama. Butuh restart.
+- BELUM DITES: kalau ada skill kecast padahal belum selesai ngomong atau kecast dobel, set `fast-cast: false` dan laporkan.

@@ -29,6 +29,12 @@ public final class VoiceManager {
     private final Map<UUID, PlayerRecognizer> recognizers = new ConcurrentHashMap<>();
     private final Set<UUID> active = ConcurrentHashMap.newKeySet();
     private final ExecutorService pool = Executors.newSingleThreadExecutor();
+    private volatile boolean fastCast = true;
+
+    /** true = skill dicast begitu phrase terdengar utuh, tanpa menunggu pemain berhenti bicara. */
+    public void setFastCast(boolean fastCast) {
+        this.fastCast = fastCast;
+    }
 
     public VoiceManager(Logger log, SkillService skillService, Model model) {
         this.log = log;
@@ -39,6 +45,8 @@ public final class VoiceManager {
     private static final class PlayerRecognizer {
         final ReentrantLock lock = new ReentrantLock();
         Recognizer recognizer;
+        /** Phrase yang boleh langsung dicast dari hasil parsial (bukan awalan phrase lain). */
+        volatile Set<String> fastPhrases = Set.of();
     }
 
     /** Panggil saat join, pilih ras, addskill/removeskill/resetrace, atau skill baru terdaftar. Main thread. */
@@ -75,6 +83,7 @@ public final class VoiceManager {
                         }
                         old = pr.recognizer;
                         pr.recognizer = fresh;
+                        pr.fastPhrases = fastPhrases(phrases);
                     } finally {
                         pr.lock.unlock();
                     }
@@ -108,6 +117,15 @@ public final class VoiceManager {
                 return null;
             }
             if (!pr.recognizer.acceptWaveForm(pcm, pcm.length)) {
+                if (!fastCast) {
+                    return null;
+                }
+                String partial = parsePartial(pr.recognizer.getPartialResult());
+                if (partial != null && pr.fastPhrases.contains(partial)) {
+                    // phrase sudah utuh: cast sekarang, recognizer dikosongkan supaya hasil akhirnya tidak dicast dua kali
+                    pr.recognizer.reset();
+                    return partial;
+                }
                 return null;
             }
             return parse(pr.recognizer.getResult());
@@ -140,6 +158,36 @@ public final class VoiceManager {
         }
         String text = obj.get("text").getAsString().trim();
         return text.isEmpty() || text.equals("[unk]") ? null : text;
+    }
+
+    private static String parsePartial(String json) {
+        if (json == null || json.isEmpty()) {
+            return null;
+        }
+        var obj = JsonParser.parseString(json).getAsJsonObject();
+        if (!obj.has("partial")) {
+            return null;
+        }
+        String text = obj.get("partial").getAsString().trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    /** Phrase yang bukan awalan phrase lain (kalau ada "meteor" dan "meteor storm", "meteor" harus menunggu hasil akhir). */
+    private static Set<String> fastPhrases(List<String> phrases) {
+        Set<String> result = new java.util.HashSet<>();
+        for (String phrase : phrases) {
+            boolean prefix = false;
+            for (String other : phrases) {
+                if (!other.equals(phrase) && other.startsWith(phrase + " ")) {
+                    prefix = true;
+                    break;
+                }
+            }
+            if (!prefix) {
+                result.add(phrase);
+            }
+        }
+        return result;
     }
 
     public void remove(UUID id) {

@@ -85,7 +85,7 @@ public final class BlackFire implements Skill {
                 }
 
                 // Efek damage & potion efek Wither
-                target.damage(damagePerHit, player);
+                TrueDamage.apply(player, target, damagePerHit);
                 target.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 40, 1, false, false, false));
 
                 // Partikel Api Hitam (Spawning tepat di posisi target terkini)

@@ -138,6 +138,7 @@ public final class SttEngine extends JavaPlugin implements Listener {
             }
             Model model = new Model(dir.getPath());
             VoiceManager manager = new VoiceManager(getLogger(), skillService, model);
+            manager.setFastCast(getConfig().getBoolean("settings.fast-cast", true));
             Object link = VoiceLink.start(this, manager, skillService);
             if (link == null) {
                 getLogger().warning("Layanan Simple Voice Chat tidak tersedia. Fitur voice nonaktif.");

@@ -9,3 +9,5 @@ settings:
   burnout-delay: 8
   # true = beri warning kalau ItemsAdder tidak aktif. STT tetap jalan tanpa ItemsAdder.
   itemsadder-integration: true
+  # true = skill langsung jalan begitu mantra terdengar utuh (lebih cepat). false = tunggu pemain berhenti bicara. Butuh restart.
+  fast-cast: true

@@ -31,7 +31,7 @@ final class Blast {
                 continue;
             }
             if (damage > 0) {
-                target.damage(damage, caster);
+                TrueDamage.apply(caster, target, damage);
             }
             Vector push = target.getLocation().toVector().subtract(center.toVector());
             push.setY(0);
