@@ -55,3 +55,16 @@ Spesifikasi: BIGUPDATE.md (v3.0.0 revisi). Downgrade target: Paper 1.20.1, Java 
 
 ## Fix build #1 (log GitHub Actions)
 - `VoiceManager.refreshGrammar`: `catch (IOException)` diganti `catch (Exception)` karena konstruktor `Recognizer` Vosk 0.3.45 tidak melempar `IOException` (error compile `exception java.io.IOException is never thrown`). Kerangka di BIGUPDATE bagian 8C punya kesalahan yang sama. Import `IOException` yang jadi tidak terpakai dihapus.
+
+## Revisi HUD: bar mana baru + kartu skill
+- Baru `hud/Hud.java`, `hud/HudLayout.java`, `hud/HudMetrics.java` (HudMetrics dihasilkan `tools/hudgen/build.py`, jangan edit tangan).
+- `Mana`: gambar HUD (font `stt:mana`, 50 level, digit) dihapus. `Mana.show()` sekarang memanggil `display` yang diisi engine (`mana.setDisplay(hud::show)`). Regen, burnout, debuff tidak diubah. `tick()` tidak lagi mengirim actionbar sendiri, `Hud` yang mengirim.
+- `SkillService.cooldownLeft(UUID, SkillDef)` ditambah: sisa cooldown detik. Tidak ada perubahan perilaku cast.
+- `SttEngine`: buat `Hud`, `hud.start()` / `stop()` / `forget(uuid)` saat quit.
+- Isi HUD dibaca live dari `SkillService.unlockedDefs(data)`: tiap skill yang dimiliki player jadi satu kartu, urut sesuai `unlocked-skills`. Skill ras, skill dari `/stt addskill`, dan skill yang dihapus (`removeskill` / `resetrace`) langsung ikut berubah paling lama 2 tick. Tidak ada daftar skill di kode HUD.
+- Kartu: nama skill, timer sisa cooldown (hanya saat cooldown, merah, per 0,1 detik), mana cost (ikon permata), lama cooldown (ikon jam). Hijau = siap, merah = cooldown. Angka mana cost jadi merah muda kalau mana player tidak cukup. Nama dibersihkan dari kode warna `&x` / `§x`, karakter non-ASCII jadi `?`, nama terlalu panjang dipotong `..`.
+- Batas 8 kartu (`HudLayout.MAX_CARDS`), supaya muat di layar GUI scale 4. Skill ke-9 dan seterusnya tetap bisa dipakai (suara), tapi tidak digambar. Kalau mau lebih, perlu baris kedua (butuh font dan tekstur tambahan).
+- Actionbar dikirim tiap 2 tick hanya kalau tampilan berubah, dan diulang tiap 1,5 detik supaya tidak hilang.
+- Bar mana menampilkan `mana / max-mana` (max dari `settings.max-mana`), isi bar 69 segmen.
+- BELUM DIKOMPILASI terhadap Paper API (sandbox tidak punya). `HudLayout` (tanpa Bukkit) sudah dikompilasi dan dites sendiri: 0, 1, 2, 9, 20 skill, nama aneh, mana 0 / 0,4 / 150 / 300. `Hud`, `Mana`, `SkillService`, `SttEngine` hanya dicek sintaks.
+

@@ -4,6 +4,7 @@ import id.stt.engine.command.SttCommand;
 import id.stt.engine.data.PlayerData;
 import id.stt.engine.data.PlayerStore;
 import id.stt.engine.gui.SttMenu;
+import id.stt.engine.hud.Hud;
 import id.stt.engine.mana.Mana;
 import id.stt.engine.mythic.MythicHook;
 import id.stt.engine.race.RaceService;
@@ -36,6 +37,7 @@ public final class SttEngine extends JavaPlugin implements Listener {
     private Mana mana;
     private MythicHook mythic;
     private SkillService skillService;
+    private Hud hud;
     private RaceService races;
     private VoiceManager voiceManager;
     private Object voice;
@@ -65,6 +67,8 @@ public final class SttEngine extends JavaPlugin implements Listener {
         mana = new Mana(this, store);
         mythic = new MythicHook(getLogger());
         skillService = new SkillService(getLogger(), registry, store, mana, mythic);
+        hud = new Hud(this, store, mana, skillService);
+        mana.setDisplay(hud::show);
         races = new RaceService(this, store, registry);
 
         checkItemsAdder();
@@ -79,6 +83,7 @@ public final class SttEngine extends JavaPlugin implements Listener {
         registry.setListeners(this::checkSkill, this::refreshAllGrammar);
         Bukkit.getPluginManager().registerEvents(this, this);
         mana.start();
+        hud.start();
         for (Player player : Bukkit.getOnlinePlayers()) {
             handleJoin(player);
         }
@@ -88,6 +93,9 @@ public final class SttEngine extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        if (hud != null) {
+            hud.stop();
+        }
         if (mana != null) {
             mana.stop();
         }
@@ -212,6 +220,7 @@ public final class SttEngine extends JavaPlugin implements Listener {
         }
         store.unload(id);
         mana.forget(id);
+        hud.forget(id);
         skillService.forget(id);
     }
 }

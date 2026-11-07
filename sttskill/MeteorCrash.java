@@ -52,7 +52,7 @@ public final class MeteorCrash implements Skill, Listener {
         map.put("radius", 6.0);
         map.put("damage", 16.0);
         // kekuatan ledakan asli (TNT = 4)
-        map.put("power", 5.0);
+        map.put("power", 3.0);
         // kedalaman lubang ledakan (block)
         map.put("depth", 10.0);
         return map;
@@ -77,7 +77,7 @@ public final class MeteorCrash implements Skill, Listener {
         double down = ctx.num("down-speed", 2.5);
         double radius = ctx.num("radius", 6);
         double damage = ctx.num("damage", 16);
-        double power = ctx.num("power", 5);
+        double power = ctx.num("power", 3);
         double depth = ctx.num("depth", 10);
         UUID id = player.getUniqueId();
         double startY = player.getLocation().getY();

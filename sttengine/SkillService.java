@@ -134,6 +134,16 @@ public final class SkillService {
         return def.nativeSkill().canCast(player);
     }
 
+    /** Sisa cooldown skill dalam detik, 0 kalau sudah siap. Dipakai HUD. */
+    public double cooldownLeft(UUID id, SkillDef def) {
+        Map<String, Long> mine = cooldowns.get(id);
+        Long readyAt = mine == null ? null : mine.get(def.id());
+        if (readyAt == null) {
+            return 0;
+        }
+        return Math.max(0, (readyAt - System.currentTimeMillis()) / 1000.0);
+    }
+
     public void forget(UUID id) {
         cooldowns.remove(id);
     }

@@ -1,0 +1,58 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "stt:font/bar_bg.png",
+      "ascent": 57,
+      "height": 57,
+      "chars": [
+        "\ue000"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "stt:font/bar_fill.png",
+      "ascent": 57,
+      "height": 57,
+      "chars": [
+        "\ue001"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "stt:font/bar_frame.png",
+      "ascent": 57,
+      "height": 57,
+      "chars": [
+        "\ue002"
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "\ue300": 1,
+        "\ue320": -1,
+        "\ue301": 2,
+        "\ue321": -2,
+        "\ue302": 4,
+        "\ue322": -4,
+        "\ue303": 8,
+        "\ue323": -8,
+        "\ue304": 16,
+        "\ue324": -16,
+        "\ue305": 32,
+        "\ue325": -32,
+        "\ue306": 64,
+        "\ue326": -64,
+        "\ue307": 128,
+        "\ue327": -128,
+        "\ue308": 256,
+        "\ue328": -256,
+        "\ue309": 512,
+        "\ue329": -512,
+        "\ue30a": 1024,
+        "\ue32a": -1024
+      }
+    }
+  ]
+}

@@ -7,7 +7,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -34,17 +33,14 @@ public final class Mana {
     /** Debuff diperpanjang tiap tick, durasinya sengaja pendek supaya hilang cepat saat mana pulih. */
     private static final int DEBUFF_TICKS = 30;
     private static final long AUTOSAVE_TICKS = 6000L;
-    private static final int LEVELS = 50;
-    private static final Key FONT = Key.key("stt", "mana");
-    private static final char BAR_BASE = '\uE000';
-    private static final char DIGIT_BASE = '\uE100';
-    private static final char GAP = '\uE0F0';
-    private static final char BLANK_DIGIT = '\uE0F1';
 
     private final SttEngine plugin;
     private final PlayerStore store;
     private final Map<UUID, Long> regenBlockedUntil = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> tiers = new ConcurrentHashMap<>();
+    /** Tampilan HUD (diisi engine dengan Hud). Mana tidak tahu cara menggambarnya. */
+    private java.util.function.Consumer<Player> display = p -> {
+    };
     private int beat;
     private BukkitTask task;
     private BukkitTask autosave;
@@ -52,6 +48,10 @@ public final class Mana {
     public Mana(SttEngine plugin, PlayerStore store) {
         this.plugin = plugin;
         this.store = store;
+    }
+
+    public void setDisplay(java.util.function.Consumer<Player> display) {
+        this.display = display;
     }
 
     public void start() {
@@ -129,7 +129,6 @@ public final class Mana {
             if (blocked == null || now >= blocked) {
                 set(id, get(id) + step);
             }
-            show(player);
             applyDebuff(player, get(id));
         }
     }
@@ -218,24 +217,6 @@ public final class Mana {
     }
 
     public void show(Player player) {
-        player.sendActionBar(render(get(player.getUniqueId())));
-    }
-
-    private Component render(double mana) {
-        int shown = (int) Math.floor(mana);
-        int level = (int) Math.round(mana / max() * LEVELS);
-        level = Math.max(0, Math.min(LEVELS, level));
-
-        StringBuilder text = new StringBuilder();
-        text.append((char) (BAR_BASE + level));
-        text.append(GAP);
-        String digits = String.valueOf(shown);
-        for (int i = digits.length(); i < 3; i++) {
-            text.append(BLANK_DIGIT);
-        }
-        for (char c : digits.toCharArray()) {
-            text.append((char) (DIGIT_BASE + (c - '0')));
-        }
-        return Component.text(text.toString()).font(FONT).color(NamedTextColor.WHITE);
+        display.accept(player);
     }
 }

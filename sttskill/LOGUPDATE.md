@@ -1,4 +1,4 @@
-# LOGUPDATE - sttskill (v3.0.0)
+# LOGUPDATE - sttskill (v3.0.2)
 
 Spesifikasi: BIGUPDATE.md. Butuh `sttengine` (`depend`).
 
@@ -31,3 +31,8 @@ Angka tuning lain (amount, range, duration, damage-per-sec, hit-mobs, height, up
 ## Catatan
 - `meteor` memakai `createExplosion(..., breakBlocks=true)` seperti v2.3.7: meteor menghancurkan block (lubang sedalam `depth`).
 - BELUM DIKOMPILASI (lihat LOGUPDATE sttengine).
+
+## v3.0.2
+- `meteor` (Meteor Crash): default `power` 5.0 -> 3.0 supaya ledakan lebih kecil. `depth` (10), `radius` (6), `damage` (16) tidak diubah.
+- Default di kode hanya berlaku untuk key yang belum ada. Kalau `plugins/sttskill/config.yml` sudah punya `skills.meteor.power`, edit manual angkanya (atau hapus barisnya lalu `/stt reload` / restart).
+- BELUM DITES di server.
