@@ -38,11 +38,24 @@ def bitmap(file, chars, cell_h_gui, rows):
     return {"type": "bitmap", "file": "stt:font/" + file, "ascent": cell_h_gui, "height": cell_h_gui, "chars": rows}
 
 # ---- bar --------------------------------------------------------------------------
-bg = art.mark_last_col(art.pad_bottom(art.bar_bg(), CELL_H))
-frame = art.mark_last_col(art.pad_bottom(art.bar_frame(), CELL_H))
-tile = art.mark_last_col(art.pad_bottom(art.bar_fill_tile(), CELL_H))
+# Satu glyph per lapisan (latar, frame), lebar <= 256 px. Potongan 3 glyph (v3.0.3) tidak ke-render di client:
+# glyph ke-2 dan ke-3 hilang dan lebarnya 0, jadi seluruh susunan di sebelah kanannya ikut geser.
+BAR_PX_W, BAR_PX_H = 256, 81           # 180 x 57 gui px -> sekitar 1.42 px per gui px
+BAR_SCALE = CELL_H / BAR_PX_H          # gui px per px tekstur (tinggi / tinggi sel)
+
+def bar_adv(actual_w):
+    return int(0.5 + actual_w * BAR_SCALE) + 1
+
+def fit_bar(img):
+    return art.mark_last_col(img.resize((BAR_PX_W, BAR_PX_H), Image.LANCZOS))
+
+bg = fit_bar(art.pad_bottom(art.bar_bg(), CELL_H))
+frame = fit_bar(art.pad_bottom(art.bar_frame(), CELL_H))
+tile_full = art.pad_bottom(art.bar_fill_tile(), CELL_H)
+tile = art.mark_last_col(tile_full.resize((max(1, round(tile_full.width * BAR_PX_W / (BAR_W * S))), BAR_PX_H), Image.LANCZOS))
 bg.save(os.path.join(TEX, "bar_bg.png")); frame.save(os.path.join(TEX, "bar_frame.png")); tile.save(os.path.join(TEX, "bar_fill.png"))
-metrics = {"BAR_ADV": adv(actual_width(frame)), "BG_ADV": adv(actual_width(bg)), "FILL_ADV": adv(actual_width(tile))}
+assert bar_adv(actual_width(bg)) == bar_adv(actual_width(frame)) and bg.width <= 256 and bg.height <= 256
+metrics = {"BAR_ADV": bar_adv(actual_width(bg)), "FILL_ADV": bar_adv(actual_width(tile))}
 write_font("hud_bar", [
     bitmap("bar_bg.png", None, CELL_H, ["\ue000"]),
     bitmap("bar_fill.png", None, CELL_H, ["\ue001"]),
@@ -154,7 +167,6 @@ final class HudMetrics {{
     static final int FILL_UNIT = {FILL_UNIT};
     static final int FILL_MAX = {art.FILL_MAX};
     static final int BAR_ADV = {metrics["BAR_ADV"]};
-    static final int BG_ADV = {metrics["BG_ADV"]};
     static final int FILL_ADV = {metrics["FILL_ADV"]};
     static final int CARD_ADV = {metrics["CARD_ADV"]};
     static final int GEM_ADV = {cost_w["\ue020"]};

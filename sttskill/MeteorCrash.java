@@ -46,15 +46,15 @@ public final class MeteorCrash implements Skill, Listener {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("cost", 40.0);
         map.put("cooldown", 8.0);
-        map.put("height", 20.0);
-        map.put("up-speed", 1.0);
+        map.put("height", 4.0);
+        map.put("up-speed", 0.7);
         map.put("down-speed", 2.5);
         map.put("radius", 6.0);
         map.put("damage", 16.0);
         // kekuatan ledakan asli (TNT = 4)
         map.put("power", 3.0);
-        // kedalaman lubang ledakan (block)
-        map.put("depth", 10.0);
+        // jarak cincin ledakan dari titik jatuh (block): makin besar makin lebar area kawahnya
+        map.put("spread", 4.0);
         return map;
     }
 
@@ -72,13 +72,13 @@ public final class MeteorCrash implements Skill, Listener {
 
     @Override
     public void cast(Player player, SkillContext ctx) {
-        double height = ctx.num("height", 20);
-        double up = ctx.num("up-speed", 1.0);
+        double height = ctx.num("height", 4);
+        double up = ctx.num("up-speed", 0.7);
         double down = ctx.num("down-speed", 2.5);
         double radius = ctx.num("radius", 6);
         double damage = ctx.num("damage", 16);
         double power = ctx.num("power", 3);
-        double depth = ctx.num("depth", 10);
+        double spread = ctx.num("spread", 4);
         UUID id = player.getUniqueId();
         double startY = player.getLocation().getY();
 
@@ -124,7 +124,7 @@ public final class MeteorCrash implements Skill, Listener {
                 slamTicks++;
                 if (slamTicks > 2 && (player.isOnGround() || stuck >= 15)) {
                     Blast.explode(player, player.getLocation(), radius, damage);
-                    Blast.dig(plugin, player, player.getLocation(), (float) power, depth);
+                    Blast.crater(plugin, player, player.getLocation(), (float) power, spread);
                     finish();
                     return;
                 }

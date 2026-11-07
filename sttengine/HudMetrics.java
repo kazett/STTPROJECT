@@ -12,7 +12,6 @@ final class HudMetrics {
     static final int FILL_UNIT = 2;
     static final int FILL_MAX = 69;
     static final int BAR_ADV = 181;
-    static final int BG_ADV = 181;
     static final int FILL_ADV = 3;
     static final int CARD_ADV = 57;
     static final int GEM_ADV = 5;

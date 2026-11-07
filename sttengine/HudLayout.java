@@ -62,15 +62,13 @@ final class HudLayout {
         if (tiles == 0 && mana >= 0.5) {
             tiles = 1;
         }
-        out.moveTo("hud_bar", WHITE, barX);
-        out.put(String.valueOf(BG), HudMetrics.BG_ADV);
+        out.putBar(BG, barX);
         int fillX = barX + HudMetrics.FILL_X0;
         for (int i = 0; i < tiles; i++) {
             out.moveTo("hud_bar", WHITE, fillX + i * HudMetrics.FILL_UNIT);
             out.put(String.valueOf(FILL), HudMetrics.FILL_ADV);
         }
-        out.moveTo("hud_bar", WHITE, barX);
-        out.put(String.valueOf(FRAME), HudMetrics.BAR_ADV);
+        out.putBar(FRAME, barX);
 
         // angka mana di tengah bar
         String label = (int) Math.floor(mana) + " / " + (int) Math.floor(max);
@@ -138,6 +136,11 @@ final class HudLayout {
             }
         }
         x = target;
+    }
+
+    private void putBar(char glyph, int x0) {
+        moveTo("hud_bar", WHITE, x0);
+        put(String.valueOf(glyph), HudMetrics.BAR_ADV);
     }
 
     private void put(String text, int advance) {

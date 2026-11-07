@@ -22,3 +22,17 @@ Resource pack (bukan plugin): HUD mana dan file voice/audio. Dipasang manual, at
 - Pasang pack baru di client 1.20.1 (hapus versi lama). Cek bar dan kartu tampil di tengah bawah, tidak menabrak hati/armor.
 - Diuji hanya lewat simulasi susunan glyph di sandbox (`tools/hudgen/preview.py`), belum di client Minecraft asli. Kalau ada geseran beberapa pixel, atur konstanta di `build.py` / `HudLayout.java`.
 - Bayangan teks bawaan client tetap muncul di bawah gambar (efek drop shadow).
+
+## v3.0.3 - fix bar HUD jadi kotak
+- Penyebab: client 1.20.1 hanya bisa menaruh glyph bitmap dengan ukuran sel maksimal 256 x 256 px di atlas font. `bar_bg.png` dan `bar_frame.png` selamanya 540 px per glyph, jadi diam-diam diganti glyph "kotak" tanpa error di log. Simulasi `preview.py` lama tidak mengecek batas ini.
+- `hud_bar.json`: `bar_bg.png` dan `bar_frame.png` sekarang dipotong 3 kolom (tiap sel 180 x 171 px): latar `\uE000\uE003\uE004`, frame `\uE002\uE005\uE006`. Tekstur PNG tidak diubah. Tiap potongan lebar 60 gui px, advance 61.
+- `sttengine`: `HudLayout.putBar` menaruh 3 potongan berurutan (geser -1 antar potongan), `HudMetrics` `BAR_ADV` dan `BG_ADV` diganti `PIECE_W` (60) dan `PIECE_ADV` (61). Lebar bar total tetap 180.
+- `tools/hudgen/build.py` dan `preview.py` disesuaikan (preview sekarang gagal kalau sel glyph > 256 px).
+- Font lain sudah di bawah batas (kartu 168 x 96, nama 27 x 96, angka bar 33 x 171). BELUM DITES di client Minecraft asli. Pasang pack baru dan hapus versi lama.
+
+## v3.0.4 - fix bar bolong
+- `font/hud_bar.json`: `bar_bg.png` dan `bar_frame.png` kembali 1 glyph (``, ``), tidak dipotong 3 lagi. Glyph ``-`` dihapus.
+- `bar_bg.png`, `bar_frame.png`: 256 x 81 px (sebelumnya 540 x 171). `bar_fill.png`: 3 x 81 px. Gambar gui tetap 180 x 57.
+- `tools/hudgen/build.py` disesuaikan (bar = 1 glyph, `BAR_ADV`) dan menulis ulang `sttengine/HudMetrics.java`. File pack lain tidak diubah.
+- `sttresourcepack.zip` dibuat ulang. Pasang pengganti pack lama, lalu relog / reload resource pack di client.
+- Diuji hanya lewat simulasi susunan glyph (`preview.py`), belum di client Minecraft asli.

@@ -19,7 +19,7 @@ public final class SttCustomSkill extends JavaPlugin {
     }
 
     private static final List<Custom> SKILLS = List.of(
-            new Custom("meteor_awakened", "Awakened Meteor", "meteor storm", "Meteor_Storm", 120.0, 30.0));
+            new Custom("meteor_storm", "Meteor Storm", "meteor storm", "Meteor_Storm", 120.0, 30.0));
 
     @Override
     public void onEnable() {

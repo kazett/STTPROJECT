@@ -1,4 +1,4 @@
-# LOGUPDATE - sttengine (v3.0.0)
+# LOGUPDATE - sttengine (v3.0.3)
 
 Spesifikasi: BIGUPDATE.md (v3.0.0 revisi). Downgrade target: Paper 1.20.1, Java 21.
 
@@ -52,3 +52,13 @@ Spesifikasi: BIGUPDATE.md (v3.0.0 revisi). Downgrade target: Paper 1.20.1, Java 
 - Nama plugin SVC `voicechat` diambil dari `depend: [voicechat]` di plugin lama yang jalan di server. Belum dicek dari JAR SVC (tidak ada di sandbox).
 - `voicechat-api` 2.6.0 dipakai karena sama dengan versi lama. Cocokkan dengan versi SVC di server 1.20.1.
 - BELUM DIKOMPILASI: sandbox tidak punya Paper API 1.20.1, SVC API, Vosk, dan akses internet. Hanya dicek sintaks. Build lewat GitHub Actions (`.github/workflows/build.yml`) atau Maven lokal.
+
+## v3.0.3
+- `HudLayout`: gambar bar (latar dan frame) sekarang 3 glyph berurutan (`putBar`), bukan 1 glyph 180 px. Sebabnya batas glyph 256 px client 1.20.1 (lihat LOGUPDATE sttresourcepack). `HudMetrics`: `BAR_ADV`, `BG_ADV` diganti `PIECE_W`, `PIECE_ADV`. Pack HUD harus versi 3.0.3.
+
+## v3.0.4 - fix HUD bar bolong
+- Gejala (screenshot): frame bar cuma ada potongan kiri, latar bar muncul terpisah di kanan, angka `19 / 300` geser ke kiri bar. Penyebab: glyph potongan ke-2 dan ke-3 (``-``) tidak ke-render di client dan lebarnya 0, jadi semua yang digambar sesudahnya ikut geser sekitar 122 gui px (2 x 61).
+- `HudLayout`: bar (latar ``, frame ``) kembali 1 glyph per lapisan, tapi ukuran tekstur dikecilkan jadi 256 px lebar (batas client). `putBar` sekarang 1 glyph. `HudMetrics`: `PIECE_W` / `PIECE_ADV` diganti `BAR_ADV` (181).
+- Pack HUD harus versi 3.0.4 (lihat LOGUPDATE sttresourcepack). Hapus pack lama di client.
+- `/stt addskill <player> <id>` sudah bisa untuk SEMUA skill yang terdaftar di registry (tidak harus ada di list ras). Tab-complete juga menampilkan semua id terdaftar. Tidak ada perubahan kode di sini.
+- BELUM DITES di client / server asli.

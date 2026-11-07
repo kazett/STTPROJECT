@@ -1,4 +1,4 @@
-# LOGUPDATE - sttcustomskill (v3.0.2)
+# LOGUPDATE - sttcustomskill (v3.0.3)
 
 Spesifikasi: BIGUPDATE.md. `depend: [sttengine]`, `softdepend: [MythicMobs, MythicLib]`.
 
@@ -42,3 +42,7 @@ Pasang manual. Hapus dulu file pack lama `meteor_only` (skill `Meteor`, mob `Met
 ## v3.0.2
 - `mythic-skill-name` `Meteor` -> `Meteor_Storm`: skill custom sekarang memanggil pack `meteor_storm`. Id, nama, phrase, cost, cooldown tidak diubah.
 - Pack lama `meteor_only` tidak lagi dipanggil. BELUM DITES di server.
+
+## v3.0.4
+- ID skill custom `meteor_awakened` diganti `meteor_storm`, nama tampil `Awakened Meteor` -> `Meteor Storm` (phrase `meteor storm` dan skill MythicMobs `Meteor_Storm` tidak berubah).
+- Player yang sudah diberi `meteor_awakened` perlu `/stt addskill <player> meteor_storm` ulang. ID lama di file player diabaikan (tidak dihapus). Config `skills.meteor_awakened.*` di `plugins/sttcustomskill/config.yml` diganti key baru `skills.meteor_storm.*` (angka cost/cooldown di key lama tidak terbawa, edit ulang kalau perlu).

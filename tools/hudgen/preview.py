@@ -16,6 +16,7 @@ def load_fonts(pack):
                 img = Image.open(os.path.join(base, "textures", p["file"].split(":")[1])).convert("RGBA")
                 rows = p["chars"]; cw = img.width // len(rows[0]); chh = img.height // len(rows)
                 assert p["ascent"] <= p["height"]
+                assert cw <= 256 and chh <= 256
                 scale = p["height"] / chh
                 for r, row in enumerate(rows):
                     for c, ch in enumerate(row):

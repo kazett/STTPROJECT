@@ -16,9 +16,11 @@ import org.bukkit.util.Vector;
 public final class SwapStep implements Skill {
 
     private final JavaPlugin plugin;
+    private final ShinraTense shinra;
 
-    public SwapStep(JavaPlugin plugin) {
+    public SwapStep(JavaPlugin plugin, ShinraTense shinra) {
         this.plugin = plugin;
+        this.shinra = shinra;
     }
 
     @Override
@@ -48,13 +50,22 @@ public final class SwapStep implements Skill {
 
     @Override
     public boolean canCast(Player player) {
-        return findTarget(player) != null;
+        // lagi channel Shinra Tense = terkunci, tidak boleh teleport
+        if (shinra.channeling(player)) {
+            return false;
+        }
+        Player target = findTarget(player);
+        if (target == null) {
+            return false;
+        }
+        // target lagi channel Shinra Tense: Swap Step dibatalkan diam-diam (mana dan cooldown tidak kepotong)
+        return !shinra.channeling(target);
     }
 
     @Override
     public void cast(Player player, SkillContext ctx) {
         Player target = findTarget(player);
-        if (target == null) {
+        if (target == null || shinra.channeling(target) || shinra.channeling(player)) {
             return;
         }
         Location from = player.getLocation();

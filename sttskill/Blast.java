@@ -24,7 +24,7 @@ final class Blast {
         world.spawnParticle(Particle.FLAME, center, 60, radius / 3, 0.4, radius / 3, 0.05);
         world.playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1.5f, 0.9f);
         for (Entity entity : world.getNearbyEntities(center, radius, radius, radius)) {
-            if (!(entity instanceof LivingEntity target) || entity instanceof ArmorStand || entity.equals(caster)) {
+            if (!(entity instanceof LivingEntity target) || entity instanceof ArmorStand || entity.equals(caster) || Summons.ownedBy(entity, caster)) {
                 continue;
             }
             if (target.getLocation().distance(center) > radius) {
@@ -43,14 +43,38 @@ final class Blast {
         }
     }
 
-    static void dig(JavaPlugin plugin, Player caster, Location center, float power, double depth) {
+    static void destroy(JavaPlugin plugin, Player caster, Location center, double radius, float power) {
         World world = center.getWorld();
-        double step = power * 0.5;
-        int layers = (int) Math.ceil(depth / step);
         blow(caster, center, power);
-        for (int k = 1; k <= layers; k++) {
-            double y = center.getY() - step * k;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> blow(caster, new Location(world, center.getX(), y, center.getZ()), power), k);
+        double reach = radius - power;
+        double step = power * 1.6;
+        int rings = (int) Math.round(reach / step);
+        for (int k = 1; k <= rings; k++) {
+            double ringRadius = reach * k / rings;
+            int count = Math.max(6, (int) Math.ceil(Math.PI * 2 * ringRadius / step));
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                for (int i = 0; i < count; i++) {
+                    double angle = Math.PI * 2 * i / count;
+                    Location at = new Location(world, center.getX() + Math.cos(angle) * ringRadius, center.getY(), center.getZ() + Math.sin(angle) * ringRadius);
+                    blow(caster, at, power);
+                }
+            }, k * 2L);
+        }
+    }
+
+    /**
+     * Kawah lebar dan dangkal: satu ledakan di tengah (setinggi pinggang supaya tidak menggali dalam),
+     * lalu cincin ledakan kecil sejauh spread block di sekelilingnya. Tiap ledakan lewat createExplosion biasa.
+     */
+    static void crater(JavaPlugin plugin, Player caster, Location center, float power, double spread) {
+        Location core = center.clone().add(0, 1, 0);
+        blow(caster, core, power);
+        int points = Math.max(6, (int) Math.round(spread * 2));
+        float ringPower = Math.max(1f, power * 0.7f);
+        for (int i = 0; i < points; i++) {
+            double angle = 2 * Math.PI * i / points;
+            Location at = core.clone().add(Math.cos(angle) * spread, 0, Math.sin(angle) * spread);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> blow(caster, at, ringPower), 1L + i / 3);
         }
     }
 

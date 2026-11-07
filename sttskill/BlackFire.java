@@ -130,7 +130,7 @@ public final class BlackFire implements Skill {
     }
 
     private boolean isValidTarget(Entity entity, Player caster, boolean hitMobs) {
-        if (!(entity instanceof LivingEntity) || entity instanceof ArmorStand || entity.equals(caster)) {
+        if (!(entity instanceof LivingEntity) || entity instanceof ArmorStand || entity.equals(caster) || Summons.ownedBy(entity, caster)) {
             return false;
         }
         if (!hitMobs && !(entity instanceof Player)) {
