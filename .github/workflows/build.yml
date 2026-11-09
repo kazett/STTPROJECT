@@ -1,0 +1,46 @@
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # Source tiap modul FLAT. Susun per package dari baris "package ..." tiap file .java.
+      - name: Build sttengine, sttskill, sttcustomskill (urutan penting)
+        run: |
+          build_module() {
+            mod="$1"; goal="$2"
+            out="build-src/$mod"
+            mkdir -p "$out/src/main/java" "$out/src/main/resources"
+            for f in "$mod"/*.java; do
+              pkg=$(grep -m1 '^package ' "$f" | sed 's/package \(.*\);/\1/' | tr -d '\r' | tr . /)
+              mkdir -p "$out/src/main/java/$pkg"
+              cp "$f" "$out/src/main/java/$pkg/"
+            done
+            cp "$mod/plugin.yml" "$out/src/main/resources/"
+            [ -f "$mod/config.yml" ] && cp "$mod/config.yml" "$out/src/main/resources/"
+            cp "$mod/pom.xml" "$out/"
+            mvn -B -f "$out/pom.xml" "$goal"
+          }
+          build_module sttengine install
+          build_module sttskill package
+          build_module sttcustomskill package
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stt-plugins
+          path: |
+            build-src/sttengine/target/sttengine-*.jar
+            build-src/sttskill/target/sttskill-*.jar
+            build-src/sttcustomskill/target/sttcustomskill-*.jar
