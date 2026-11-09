@@ -36,3 +36,21 @@ Resource pack (bukan plugin): HUD mana dan file voice/audio. Dipasang manual, at
 - `tools/hudgen/build.py` disesuaikan (bar = 1 glyph, `BAR_ADV`) dan menulis ulang `sttengine/HudMetrics.java`. File pack lain tidak diubah.
 - `sttresourcepack.zip` dibuat ulang. Pasang pengganti pack lama, lalu relog / reload resource pack di client.
 - Diuji hanya lewat simulasi susunan glyph (`preview.py`), belum di client Minecraft asli.
+
+## v3.0.6
+- `barnum.png`: sel glyph angka jadi 36 x 210 px (36 x 70 gui, sebelumnya 33 x 171), digit di bagian atas sel. `font/hud_num.json` ascent/height 57 -> 70.
+- `tools/hudgen/build.py`: `LABEL_PAD = 13`, `NUM_BASELINE_FROM_TOP`. Menulis ulang `HudMetrics.java` (hanya `NUM` yang berubah).
+- File pack lain tidak diubah. Pasang `sttresourcepack.zip` baru.
+
+## v3.0.7
+- `bar_frame.png`, `card.png`, `bar_bg.png`, `bar_fill.png` dibuat ulang: lubang transparan di berlian bar dan permata kartu ditutup (lihat LOGUPDATE sttengine v3.0.7). Ukuran dan metrik tidak berubah.
+- `tools/hudgen/art.py`: gambar hiasan lewat layer + `alpha_composite`.
+
+## v3.0.8
+- Font baru `hud_bar_u`, `hud_card_u`, `hud_name_u`, `hud_timer_u`, `hud_cost_u`, `hud_num_u` dengan tekstur `*_u.png`: glyph dan kode karakter sama dengan font aslinya, tapi sel diberi ruang bening di bawah supaya naik 38 gui px (ascent tidak boleh lebih besar dari height, jadi naik lewat tinggi sel). Dipakai engine untuk mode dua baris.
+- `hud_bar` dan `hud_bar_u`: glyph baru `\uE003` (isi bar merah, `bar_fill_low.png` dan `bar_fill_low_u.png`).
+- `hud_card` dan `hud_card_u`: glyph baru `\uE012` (kartu amber, mana kurang). `card.png` jadi 3 sel, dua sel pertama identik piksel dengan v3.0.7.
+- `barnum_u.png` memakai 7/3 px per gui px (bukan 3) karena sel 108 gui px x 3 = 324 melebihi batas 256 px. Lebar digitnya sama persis dengan versi biasa, jadi `HudMetrics.java` tidak berubah (build.py menolak kalau lebarnya beda).
+- Semua tekstur v3.0.7 identik piksel (cost, name, timer, bar_bg, bar_fill, bar_frame, barnum).
+- `tools/hudgen/build.py` dan `art.py` disesuaikan (`ROW_SHIFT = 38`). Jalankan ulang: `python3 tools/hudgen/build.py sttresourcepack sttengine/HudMetrics.java`.
+- `sttresourcepack.zip` dibuat ulang. Hapus pack lama di client dan relog. BELUM DITES di client Minecraft asli.

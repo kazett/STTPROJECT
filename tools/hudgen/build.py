@@ -2,7 +2,7 @@
 import json, os, sys
 from PIL import Image, ImageDraw, ImageFont
 import art
-from art import S, BAR_W, BAR_H, CARD_W, CARD_H, GAP, CELL_H, FILL_UNIT
+from art import S, BAR_W, BAR_H, CARD_W, CARD_H, GAP, CELL_H, FILL_UNIT, ROW_SHIFT
 
 OUT = sys.argv[1]            # .../sttresourcepack
 ASSET = os.path.join(OUT, "assets/stt")
@@ -11,8 +11,8 @@ FONT = os.path.join(ASSET, "font")
 LORA = "/usr/share/fonts/truetype/google-fonts/Lora-Variable.ttf"
 os.makedirs(TEX, exist_ok=True); os.makedirs(FONT, exist_ok=True)
 
-def adv(actual_w):                     # sama dengan BitmapProvider 1.20.1, scale = 1/S
-    return int(0.5 + actual_w / S) + 1
+def adv(actual_w, s=S):                # sama dengan BitmapProvider 1.20.1, scale = 1/s
+    return int(0.5 + actual_w / s) + 1
 
 def actual_width(img):
     a = img.getchannel("A")
@@ -41,37 +41,57 @@ def bitmap(file, chars, cell_h_gui, rows):
 # Satu glyph per lapisan (latar, frame), lebar <= 256 px. Potongan 3 glyph (v3.0.3) tidak ke-render di client:
 # glyph ke-2 dan ke-3 hilang dan lebarnya 0, jadi seluruh susunan di sebelah kanannya ikut geser.
 BAR_PX_W, BAR_PX_H = 256, 81           # 180 x 57 gui px -> sekitar 1.42 px per gui px
-BAR_SCALE = CELL_H / BAR_PX_H          # gui px per px tekstur (tinggi / tinggi sel)
+UP_CELL_H = CELL_H + ROW_SHIFT
 
-def bar_adv(actual_w):
-    return int(0.5 + actual_w * BAR_SCALE) + 1
+def bar_adv(actual_w, cell_h, px_h):
+    return int(0.5 + actual_w * cell_h / px_h) + 1
 
-def fit_bar(img):
-    return art.mark_last_col(img.resize((BAR_PX_W, BAR_PX_H), Image.LANCZOS))
+def bar_set(cell_h, suffix):
+    px_h = round(cell_h * BAR_PX_H / CELL_H)
+    assert px_h * CELL_H == cell_h * BAR_PX_H and px_h <= 256
 
-bg = fit_bar(art.pad_bottom(art.bar_bg(), CELL_H))
-frame = fit_bar(art.pad_bottom(art.bar_frame(), CELL_H))
-tile_full = art.pad_bottom(art.bar_fill_tile(), CELL_H)
-tile = art.mark_last_col(tile_full.resize((max(1, round(tile_full.width * BAR_PX_W / (BAR_W * S))), BAR_PX_H), Image.LANCZOS))
-bg.save(os.path.join(TEX, "bar_bg.png")); frame.save(os.path.join(TEX, "bar_frame.png")); tile.save(os.path.join(TEX, "bar_fill.png"))
-assert bar_adv(actual_width(bg)) == bar_adv(actual_width(frame)) and bg.width <= 256 and bg.height <= 256
-metrics = {"BAR_ADV": bar_adv(actual_width(bg)), "FILL_ADV": bar_adv(actual_width(tile))}
-write_font("hud_bar", [
-    bitmap("bar_bg.png", None, CELL_H, ["\ue000"]),
-    bitmap("bar_fill.png", None, CELL_H, ["\ue001"]),
-    bitmap("bar_frame.png", None, CELL_H, ["\ue002"]),
-])
+    def fit(img):
+        return art.mark_last_col(img.resize((BAR_PX_W, px_h), Image.LANCZOS))
+
+    def tile_of(low):
+        full = art.pad_bottom(art.bar_fill_tile(low), cell_h)
+        return art.mark_last_col(full.resize((max(1, round(full.width * BAR_PX_W / (BAR_W * S))), px_h), Image.LANCZOS))
+
+    bg = fit(art.pad_bottom(art.bar_bg(), cell_h))
+    frame = fit(art.pad_bottom(art.bar_frame(), cell_h))
+    tile, tile_low = tile_of(False), tile_of(True)
+    for name, img in (("bar_bg", bg), ("bar_fill", tile), ("bar_frame", frame), ("bar_fill_low", tile_low)):
+        img.save(os.path.join(TEX, name + suffix + ".png"))
+    bar = bar_adv(actual_width(bg), cell_h, px_h)
+    fill = bar_adv(actual_width(tile), cell_h, px_h)
+    assert bar == bar_adv(actual_width(frame), cell_h, px_h) and fill == bar_adv(actual_width(tile_low), cell_h, px_h)
+    write_font("hud_bar" + suffix, [
+        bitmap("bar_bg" + suffix + ".png", None, cell_h, ["\ue000"]),
+        bitmap("bar_fill" + suffix + ".png", None, cell_h, ["\ue001"]),
+        bitmap("bar_frame" + suffix + ".png", None, cell_h, ["\ue002"]),
+        bitmap("bar_fill_low" + suffix + ".png", None, cell_h, ["\ue003"]),
+    ])
+    return bar, fill
+
+bar_main, fill_main = bar_set(CELL_H, "")
+bar_up, fill_up = bar_set(UP_CELL_H, "_u")
+assert (bar_main, fill_main) == (bar_up, fill_up)
+metrics = {"BAR_ADV": bar_main, "FILL_ADV": fill_main}
 
 # ---- kartu ------------------------------------------------------------------------
-ready, cool = art.card("ready"), art.card("cool")
-atlas = Image.new("RGBA", (ready.width, ready.height * 2), (0, 0, 0, 0))
-atlas.paste(ready, (0, 0)); atlas.paste(cool, (0, ready.height))
-art.mark_last_col(atlas.crop((0, 0, ready.width, ready.height)))
-for i, im in enumerate((ready, cool)):
-    art.mark_last_col(im); atlas.paste(im, (0, i * ready.height))
-atlas.save(os.path.join(TEX, "card.png"))
-metrics["CARD_ADV"] = adv(actual_width(ready))
-write_font("hud_card", [{"type": "bitmap", "file": "stt:font/card.png", "ascent": CARD_H, "height": CARD_H, "chars": ["\ue010", "\ue011"]}])
+CARD_CELLS = [art.card(v) for v in ("ready", "cool", "low")]
+
+def card_set(cell_h, suffix):
+    ph = cell_h * S
+    atlas = Image.new("RGBA", (CARD_CELLS[0].width, ph * len(CARD_CELLS)), (0, 0, 0, 0))
+    for i, im in enumerate(CARD_CELLS):
+        atlas.paste(art.mark_last_col(art.pad_bottom(im, cell_h)), (0, i * ph))
+    atlas.save(os.path.join(TEX, "card" + suffix + ".png"))
+    write_font("hud_card" + suffix, [{"type": "bitmap", "file": "stt:font/card" + suffix + ".png", "ascent": cell_h, "height": cell_h, "chars": ["\ue010", "\ue011", "\ue012"]}])
+    return adv(actual_width(CARD_CELLS[0]))
+
+metrics["CARD_ADV"] = card_set(CARD_H, "")
+assert card_set(CARD_H + ROW_SHIFT, "_u") == metrics["CARD_ADV"]
 
 # ---- atlas teks -------------------------------------------------------------------
 def load_font(px, weight):
@@ -79,10 +99,11 @@ def load_font(px, weight):
     f.set_variation_by_name(weight)
     return f
 
-def text_atlas(file, chars, cell_w, cell_h_gui, baseline_gui, px, weight, icons=None, cols=16, xscale=1.0):
-    """Sel bawah = Y 0, tinggi cell_h_gui. baseline_gui = jarak baseline dari bawah sel."""
+def text_atlas(file, chars, cell_w, cell_h_gui, baseline_gui, px, weight, icons=None, cols=16, xscale=1.0, s=S):
+    """Sel bawah = Y 0, tinggi cell_h_gui. baseline_gui = jarak baseline dari bawah sel. s = px tekstur per gui px."""
     font = load_font(px, weight)
-    ch = cell_h_gui * S
+    ch = round(cell_h_gui * s)
+    assert ch <= 256
     rows = (len(chars) + cols - 1) // cols
     img = Image.new("RGBA", (cols * cell_w, rows * ch), (0, 0, 0, 0))
     widths = {}
@@ -98,11 +119,11 @@ def text_atlas(file, chars, cell_w, cell_h_gui, baseline_gui, px, weight, icons=
             icons[c](cell)
         else:
             wide = Image.new("RGBA", (int(cell_w / xscale), ch), (0, 0, 0, 0))
-            ImageDraw.Draw(wide).text((0, ch - baseline_gui * S), c, font=font, fill=(255, 255, 255, 255), anchor="ls")
+            ImageDraw.Draw(wide).text((0, ch - baseline_gui * s), c, font=font, fill=(255, 255, 255, 255), anchor="ls")
             cell = wide if xscale == 1.0 else wide.resize((cell_w, ch), Image.LANCZOS)
         if cell.getbbox() is None:
             grid[r] += "\0"; continue
-        widths[c] = adv(actual_width(cell))
+        widths[c] = adv(actual_width(cell), s)
         img.paste(cell, (col * cell_w, r * ch))
         grid[r] += c
     while len(grid[-1]) < cols:
@@ -112,41 +133,51 @@ def text_atlas(file, chars, cell_w, cell_h_gui, baseline_gui, px, weight, icons=
     img.save(os.path.join(TEX, file))
     return {"type": "bitmap", "file": "stt:font/" + file, "ascent": cell_h_gui, "height": cell_h_gui, "chars": grid}, widths
 
-def lay(y_from_top, cap_gui):                # baseline gui dari bawah sel kartu, untuk teks rata tengah y_from_top
-    return CELL_H_CARD - y_from_top - cap_gui / 2
-
-CELL_H_CARD = CARD_H
-ASCII = [chr(c) for c in range(33, 127)]
-name_prov, name_w = text_atlas("name.png", ASCII, 27, CARD_H, CARD_H - 10.8 - 2.5, 21, "SemiBold", cols=16, xscale=0.9)
-timer_chars = list("0123456789.s")
-timer_prov, timer_w = text_atlas("timer.png", timer_chars, 30, 20, 8.3, 26, "Bold", cols=12)
-
-def gem(cell):
+def gem(cell, shift=0):
     d = ImageDraw.Draw(cell, "RGBA")
-    cy = cell.height - 5.2 * S
+    cy = cell.height - (5.2 + shift) * S
     pts = [(1, cy), (6.5, cy - 8), (12, cy), (6.5, cy + 8)]
     d.polygon(pts, fill=(60, 130, 255, 255), outline=(10, 20, 70, 255))
     d.polygon([(1, cy), (6.5, cy - 8), (6.5, cy)], fill=(150, 220, 255, 255))
     d.polygon([(6.5, cy - 8), (12, cy), (6.5, cy)], fill=(90, 170, 255, 255))
     d.line(pts + [pts[0]], fill=(10, 20, 70, 255), width=1)
 
-def clock(cell):
+def clock(cell, shift=0):
     d = ImageDraw.Draw(cell, "RGBA")
-    cy = cell.height - 5.2 * S
+    cy = cell.height - (5.2 + shift) * S
     cx = 7
     d.ellipse([cx - 6, cy - 6, cx + 6, cy + 6], outline=(255, 255, 255, 255), width=2)
     d.line([(cx, cy), (cx, cy - 4)], fill=(255, 255, 255, 255), width=2)
     d.line([(cx, cy), (cx + 3, cy + 1)], fill=(255, 255, 255, 255), width=2)
 
+ASCII = [chr(c) for c in range(33, 127)]
+timer_chars = list("0123456789.s")
 cost_chars = list("0123456789.s") + ["\ue020", "\ue021"]
-cost_prov, cost_w = text_atlas("cost.png", cost_chars, 21, 9, 3.6, 17, "SemiBold", icons={"\ue020": gem, "\ue021": clock}, cols=14)
 num_chars = list("0123456789/")
-num_prov, num_w = text_atlas("barnum.png", num_chars, 33, CELL_H, CELL_H - 11 - 3.2, 27, "SemiBold", cols=11)
+# Angka mana di ATAS bar: sel glyph dibuat LABEL_PAD gui lebih tinggi dari sel bar (ascent = height = tinggi sel),
+# jadi sisi atasnya menjorok di atas bar. Digit digambar di bagian atas sel itu, bar mulai LABEL_PAD gui di bawahnya.
+LABEL_PAD = 13
+NUM_CELL_H = CELL_H + LABEL_PAD
+NUM_BASELINE_FROM_TOP = 10.5
+NUM_UP_S = 7 / 3
 
-write_font("hud_name", [name_prov, {"type": "space", "advances": {" ": 3}}])
-write_font("hud_timer", [timer_prov])
-write_font("hud_cost", [cost_prov])
-write_font("hud_num", [num_prov, {"type": "space", "advances": {" ": 4}}])
+def text_set(shift, suffix):
+    name_prov, name_w = text_atlas("name" + suffix + ".png", ASCII, 27, CARD_H + shift, CARD_H - 10.8 - 2.5 + shift, 21, "SemiBold", cols=16, xscale=0.9)
+    timer_prov, timer_w = text_atlas("timer" + suffix + ".png", timer_chars, 30, 20 + shift, 8.3 + shift, 26, "Bold", cols=12)
+    cost_prov, cost_w = text_atlas("cost" + suffix + ".png", cost_chars, 21, 9 + shift, 3.6 + shift, 17, "SemiBold", icons={"\ue020": lambda c: gem(c, shift), "\ue021": lambda c: clock(c, shift)}, cols=14)
+    if shift:
+        num_prov, num_w = text_atlas("barnum" + suffix + ".png", num_chars, 28, NUM_CELL_H + shift, NUM_CELL_H + shift - NUM_BASELINE_FROM_TOP, 28, "SemiBold", cols=11, s=NUM_UP_S)
+    else:
+        num_prov, num_w = text_atlas("barnum.png", num_chars, 36, NUM_CELL_H, NUM_CELL_H - NUM_BASELINE_FROM_TOP, 36, "SemiBold", cols=11)
+    write_font("hud_name" + suffix, [name_prov, {"type": "space", "advances": {" ": 3}}])
+    write_font("hud_timer" + suffix, [timer_prov])
+    write_font("hud_cost" + suffix, [cost_prov])
+    write_font("hud_num" + suffix, [num_prov, {"type": "space", "advances": {" ": 4}}])
+    return name_w, timer_w, cost_w, num_w
+
+name_w, timer_w, cost_w, num_w = text_set(0, "")
+name_wu, timer_wu, cost_wu, num_wu = text_set(ROW_SHIFT, "_u")
+assert name_w == name_wu and timer_w == timer_wu and cost_w == cost_wu and num_w == num_wu
 
 # ---- HudMetrics.java --------------------------------------------------------------
 def table(widths, chars, default):

@@ -1,5 +1,5 @@
 name: sttengine
-version: 3.0.5
+version: 3.0.8
 main: id.stt.engine.SttEngine
 api-version: '1.20'
 softdepend: [voicechat, ItemsAdder, MythicMobs, MythicLib]

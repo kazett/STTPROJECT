@@ -6,7 +6,7 @@
 
     <groupId>id.stt</groupId>
     <artifactId>sttcustomskill</artifactId>
-    <version>3.0.5</version>
+    <version>3.0.8</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -31,7 +31,7 @@
         <dependency>
             <groupId>id.stt</groupId>
             <artifactId>sttengine</artifactId>
-            <version>3.0.5</version>
+            <version>3.0.8</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

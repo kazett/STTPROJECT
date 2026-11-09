@@ -1,5 +1,5 @@
 name: sttcustomskill
-version: 3.0.5
+version: 3.0.8
 main: id.stt.customskill.SttCustomSkill
 api-version: '1.20'
 depend: [sttengine]

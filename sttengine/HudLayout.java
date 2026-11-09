@@ -7,7 +7,9 @@ import java.util.Locale;
 /**
  * Susunan HUD (bar mana + kartu skill) sebagai daftar potongan teks berfont stt:hud_*. Tanpa Bukkit, jadi bisa dites sendiri.
  * Semua posisi dihitung dalam gui px; geser kursor memakai glyph spasi (+/-2^k) yang ada di tiap font.
- * Urutan gambar: bar (bg, isi, frame), kartu, nama, timer, ikon + angka cost. Yang belakangan menimpa yang di depan.
+ * Urutan gambar: kartu, nama, timer, ikon + angka cost, angka mana, lalu bar (bg, isi, frame). Yang belakangan menimpa yang di depan.
+ * Sampai 5 skill: satu baris kartu di bawah bar. 6 sampai 8 skill: dua baris, kartu dibagi rata (baris atas dapat sisa ganjil).
+ * Di mode dua baris angka mana, bar, dan baris atas memakai font berakhiran _u (glyph sama, posisi lebih tinggi), baris bawah tetap di posisi satu baris.
  */
 final class HudLayout {
 
@@ -19,7 +21,17 @@ final class HudLayout {
     record Card(String name, double remaining, double cost, double cooldown, boolean enough) {
     }
 
+    /**
+     * Kartu per halaman (dua baris). Satu baris maksimal 5 kartu = 288 gui px, masih muat di layar tersempit yang dipakai Minecraft (320 gui px).
+     * Kalau skill lebih dari 8, kartu dibagi per halaman yang berganti otomatis (lihat Hud), jadi lebar HUD tidak pernah melebihi 288.
+     */
     static final int MAX_CARDS = 8;
+    static final int SINGLE_ROW_CARDS = 5;
+    private static final double LOW_RATIO = 0.2;
+
+    static int pageCount(int cards) {
+        return Math.max(1, (cards + MAX_CARDS - 1) / MAX_CARDS);
+    }
     private static final int CARD_GAP = 2;
     private static final int NAME_MAX = 50;
     private static final int COLOR_NAME = 0xE9EEF8;
@@ -31,9 +43,11 @@ final class HudLayout {
     private static final char NEG0 = '\uE320';
     private static final char BG = '\uE000';
     private static final char FILL = '\uE001';
+    private static final char FILL_LOW = '\uE003';
     private static final char FRAME = '\uE002';
     private static final char READY = '\uE010';
     private static final char COOL = '\uE011';
+    private static final char NO_MANA = '\uE012';
     private static final char GEM = '\uE020';
     private static final char CLOCK = '\uE021';
 
@@ -47,74 +61,51 @@ final class HudLayout {
     }
 
     static List<Run> build(double mana, double max, List<Card> all) {
-        HudLayout out = new HudLayout();
-        List<Card> cards = all.size() > MAX_CARDS ? all.subList(0, MAX_CARDS) : all;
-        int n = cards.size();
-        int step = HudMetrics.CARD_W + CARD_GAP;
-        int cardsW = n == 0 ? 0 : n * step - CARD_GAP;
-        int width = Math.max(cardsW, HudMetrics.BAR_W);
-        int barX = (width - HudMetrics.BAR_W) / 2;
-        int cardsX = (width - cardsW) / 2;
+        return build(mana, max, all, 0);
+    }
 
-        // bar: latar, isi, frame
+    /** page = nomor halaman (0, 1, ...), dibulatkan ke jumlah halaman yang ada. */
+    static List<Run> build(double mana, double max, List<Card> all, int page) {
+        HudLayout out = new HudLayout();
+        int pages = pageCount(all.size());
+        int current = Math.floorMod(page, pages);
+        List<Card> cards = all.subList(Math.min(all.size(), current * MAX_CARDS), Math.min(all.size(), (current + 1) * MAX_CARDS));
+        int n = cards.size();
+        boolean two = n > SINGLE_ROW_CARDS;
+        int top = two ? (n + 1) / 2 : n;
+        int width = Math.max(rowWidth(top), HudMetrics.BAR_W);
+        int barX = (width - HudMetrics.BAR_W) / 2;
+
+        out.row(cards.subList(0, top), width, two);
+        out.row(cards.subList(top, n), width, false);
+        // angka mana di ATAS bar, rata tengah terhadap bar (glyph angka lebih tinggi dari bar, lihat build.py LABEL_PAD)
+        String label = (int) Math.floor(mana) + " / " + (int) Math.floor(max);
+        int labelW = numWidth(label);
+        out.moveTo(face("hud_num", two), COLOR_NUM, barX + (HudMetrics.BAR_W - labelW) / 2);
+        out.putText(label, labelW);
+        if (pages > 1) {
+            // penanda halaman kartu ("2/3") di kanan atas bar, jauh dari angka mana
+            String pageText = (current + 1) + "/" + pages;
+            int pageW = numWidth(pageText);
+            out.moveTo(face("hud_num", two), COLOR_NUM, barX + HudMetrics.BAR_W - pageW - 3);
+            out.putText(pageText, pageW);
+        }
+
+        // bar: latar, isi, frame. Digambar paling akhir: kalau client salah menghitung lebar glyph bar, kartu dan teks tidak ikut geser.
         double ratio = max <= 0 ? 0 : Math.max(0, Math.min(1, mana / max));
         int tiles = (int) Math.round(ratio * HudMetrics.FILL_MAX);
         if (tiles == 0 && mana >= 0.5) {
             tiles = 1;
         }
-        out.putBar(BG, barX);
+        char fill = ratio <= LOW_RATIO ? FILL_LOW : FILL;
+        out.putBar(BG, barX, two);
         int fillX = barX + HudMetrics.FILL_X0;
         for (int i = 0; i < tiles; i++) {
-            out.moveTo("hud_bar", WHITE, fillX + i * HudMetrics.FILL_UNIT);
-            out.put(String.valueOf(FILL), HudMetrics.FILL_ADV);
+            out.moveTo(face("hud_bar", two), WHITE, fillX + i * HudMetrics.FILL_UNIT);
+            out.put(String.valueOf(fill), HudMetrics.FILL_ADV);
         }
-        out.putBar(FRAME, barX);
+        out.putBar(FRAME, barX, two);
 
-        // angka mana di tengah bar
-        String label = (int) Math.floor(mana) + " / " + (int) Math.floor(max);
-        int labelW = numWidth(label);
-        int labelX = barX + HudMetrics.FILL_X0 + HudMetrics.FILL_MAX - labelW / 2;
-        out.moveTo("hud_num", COLOR_NUM, labelX);
-        out.putText(label, labelW);
-
-        // kartu
-        for (int i = 0; i < n; i++) {
-            out.moveTo("hud_card", WHITE, cardsX + i * step);
-            out.put(String.valueOf(cards.get(i).remaining() > 0 ? COOL : READY), HudMetrics.CARD_ADV);
-        }
-        for (int i = 0; i < n; i++) {
-            String name = fit(clean(cards.get(i).name()));
-            int w = nameWidth(name);
-            out.moveTo("hud_name", COLOR_NAME, cardsX + i * step + (HudMetrics.CARD_W - w) / 2);
-            out.putText(name, w);
-        }
-        for (int i = 0; i < n; i++) {
-            Card card = cards.get(i);
-            if (card.remaining() > 0) {
-                String t = timerText(card.remaining());
-                int w = digitsWidth(t, HudMetrics.TIMER);
-                out.moveTo("hud_timer", COLOR_TIMER, cardsX + i * step + (HudMetrics.CARD_W - w) / 2);
-                out.putText(t, w);
-            }
-        }
-        for (int i = 0; i < n; i++) {
-            Card card = cards.get(i);
-            int cx = cardsX + i * step;
-            String cost = trim(card.cost());
-            String cd = trim(card.cooldown()) + "s";
-            int costW = HudMetrics.GEM_ADV + 2 + digitsWidth(cost, HudMetrics.COST);
-            int cdW = HudMetrics.CLOCK_ADV + 2 + digitsWidth(cd, HudMetrics.COST);
-            int left = cx + 5;
-            int right = Math.max(left + costW + 2, cx + HudMetrics.CARD_W - 5 - cdW);
-            out.moveTo("hud_cost", WHITE, left);
-            out.put(String.valueOf(GEM), HudMetrics.GEM_ADV);
-            out.moveTo("hud_cost", card.enough() ? WHITE : COLOR_LOW, left + HudMetrics.GEM_ADV + 2);
-            out.putText(cost, digitsWidth(cost, HudMetrics.COST));
-            out.moveTo("hud_cost", WHITE, right);
-            out.put(String.valueOf(CLOCK), HudMetrics.CLOCK_ADV);
-            out.moveTo("hud_cost", WHITE, right + HudMetrics.CLOCK_ADV + 2);
-            out.putText(cd, digitsWidth(cd, HudMetrics.COST));
-        }
         // lebar total teks = lebar konten, supaya actionbar (rata tengah) pas di tengah layar
         out.moveTo(out.font == null ? "hud_bar" : out.font, out.color, width);
         out.flush();
@@ -138,8 +129,60 @@ final class HudLayout {
         x = target;
     }
 
-    private void putBar(char glyph, int x0) {
-        moveTo("hud_bar", WHITE, x0);
+    private static String face(String base, boolean up) {
+        return up ? base + "_u" : base;
+    }
+
+    private static int rowWidth(int cards) {
+        return cards == 0 ? 0 : cards * (HudMetrics.CARD_W + CARD_GAP) - CARD_GAP;
+    }
+
+    private void row(List<Card> cards, int width, boolean up) {
+        int n = cards.size();
+        int step = HudMetrics.CARD_W + CARD_GAP;
+        int cardsX = (width - rowWidth(n)) / 2;
+        for (int i = 0; i < n; i++) {
+            Card card = cards.get(i);
+            moveTo(face("hud_card", up), WHITE, cardsX + i * step);
+            put(String.valueOf(card.remaining() > 0 ? COOL : card.enough() ? READY : NO_MANA), HudMetrics.CARD_ADV);
+        }
+        for (int i = 0; i < n; i++) {
+            String name = fit(clean(cards.get(i).name()));
+            int w = nameWidth(name);
+            moveTo(face("hud_name", up), COLOR_NAME, cardsX + i * step + (HudMetrics.CARD_W - w) / 2);
+            putText(name, w);
+        }
+        for (int i = 0; i < n; i++) {
+            Card card = cards.get(i);
+            if (card.remaining() > 0) {
+                String t = timerText(card.remaining());
+                int w = digitsWidth(t, HudMetrics.TIMER);
+                moveTo(face("hud_timer", up), COLOR_TIMER, cardsX + i * step + (HudMetrics.CARD_W - w) / 2);
+                putText(t, w);
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            Card card = cards.get(i);
+            int cx = cardsX + i * step;
+            String cost = trim(card.cost());
+            String cd = trim(card.cooldown()) + "s";
+            int costW = HudMetrics.GEM_ADV + 2 + digitsWidth(cost, HudMetrics.COST);
+            int cdW = HudMetrics.CLOCK_ADV + 2 + digitsWidth(cd, HudMetrics.COST);
+            int left = cx + 5;
+            int right = Math.max(left + costW + 2, cx + HudMetrics.CARD_W - 5 - cdW);
+            moveTo(face("hud_cost", up), WHITE, left);
+            put(String.valueOf(GEM), HudMetrics.GEM_ADV);
+            moveTo(face("hud_cost", up), card.enough() ? WHITE : COLOR_LOW, left + HudMetrics.GEM_ADV + 2);
+            putText(cost, digitsWidth(cost, HudMetrics.COST));
+            moveTo(face("hud_cost", up), WHITE, right);
+            put(String.valueOf(CLOCK), HudMetrics.CLOCK_ADV);
+            moveTo(face("hud_cost", up), WHITE, right + HudMetrics.CLOCK_ADV + 2);
+            putText(cd, digitsWidth(cd, HudMetrics.COST));
+        }
+    }
+
+    private void putBar(char glyph, int x0, boolean up) {
+        moveTo(face("hud_bar", up), WHITE, x0);
         put(String.valueOf(glyph), HudMetrics.BAR_ADV);
     }
 

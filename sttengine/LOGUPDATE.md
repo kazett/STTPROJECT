@@ -69,3 +69,27 @@ Spesifikasi: BIGUPDATE.md (v3.0.0 revisi). Downgrade target: Paper 1.20.1, Java 
 - Phrase yang merupakan awalan phrase lain (misal `meteor` vs `meteor storm`) tidak di-fast-cast, tetap tunggu hasil akhir.
 - `settings.fast-cast: true` di `plugins/sttengine/config.yml`. `false` = perilaku lama. Butuh restart.
 - BELUM DITES: kalau ada skill kecast padahal belum selesai ngomong atau kecast dobel, set `fast-cast: false` dan laporkan.
+
+## v3.0.6 - HUD: angka mana di atas bar, max mana 500, regen lebih cepat
+- Screenshot terakhir masih menunjukkan bug lama (latar bar nongol terpisah di kanan, angka geser ke kiri): itu jar versi 3.0.3 karena build 3.0.4 gagal compile. Perbaikan bar 1 glyph (3.0.4) baru aktif setelah build sukses dan pack baru terpasang.
+- Angka `mana / max` sekarang di ATAS bar, rata tengah terhadap bar (bukan di dalam/samping). Caranya: glyph angka (`barnum.png`) dibuat 13 gui lebih tinggi dari sel bar (ascent = height = 70), digit digambar di bagian atas sel. `HudMetrics.NUM` ikut berubah (font digit lebih besar).
+- `HudLayout`: urutan gambar jadi kartu, nama, timer, cost, angka mana, lalu bar paling akhir. Kalau client salah hitung lebar glyph bar, kartu dan teks tidak ikut geser.
+- `settings.max-mana` 300 -> 500. Config server lama menyimpan 300, jadi ada migrasi sekali (`config-version: 2` di `plugins/sttengine/config.yml`) yang menimpa ke 500. Setelah itu bebas diedit. Mana player yang tersimpan tidak diubah, tinggal regen.
+- Regen: dulu 3 mana tiap 5 detik (0.6/detik, 500 mana butuh ~14 menit). Sekarang bisa diatur: `settings.mana-regen-amount` (5) dan `settings.mana-regen-seconds` (2), jadi 2.5/detik (penuh dari kosong ~3.3 menit). Jeda regen setelah pakai skill (`mana-regen-delay` 3 dan `burnout-delay` 8) tidak diubah. Angka ini keputusan saya, sesuaikan selera.
+- Debuff mana menipis (20 / 10 / habis) pakai angka mentah, tidak ikut berubah.
+
+## v3.0.7 - HUD: berlian bolong, banyak skill
+- **Berlian kiri bar bolong (kuadran kiri-atas tembus pandang, rumput kelihatan):** penyebab di generator gambar. `ImageDraw.Draw(img, "RGBA")` pada gambar RGBA MENIMPA piksel (alpha ikut tertimpa), jadi kilau putih `alpha 70` di `crystal()` meninggalkan lubang. Sekarang semua hiasan digambar di layer terpisah lalu `alpha_composite`. Ikut membaik: permata kecil di kanan bar, permata di atas tiap kartu, garis pemisah dan titik cahaya (sebelumnya semi-transparan). `bar_frame.png` dan `card.png` dibuat ulang.
+- **Lebih dari 5 skill:** kartu dibagi per halaman, 5 kartu per halaman (288 gui px, muat di layar tersempit Minecraft yang 320 gui px). Halaman berganti otomatis tiap `settings.hud-page-seconds` detik (default 4), penanda `2/3` di kanan atas bar. Sebelumnya HUD melebar sampai 8 kartu (462 gui px, kepotong di GUI scale besar) dan kartu ke-9 dst tidak tampil.
+- Diuji dengan simulasi 1089 skenario (0..30 skill, semua halaman, mana 0..500, cooldown, nama panjang): lebar total, posisi bar dan kartu, pusat angka mana, nama di dalam kartu, penanda halaman tidak menabrak angka. 0 gagal. Belum dicoba di client asli.
+
+## v3.0.8 - HUD: dua baris (sampai 8 skill sekaligus), bar mana merah saat tipis, kartu amber saat mana kurang
+- Susunan atas ke bawah: angka mana, bar mana, baris 1, baris 2. Sampai 5 skill tetap satu baris persis seperti v3.0.7. 6 sampai 8 skill jadi dua baris dibagi rata (6 = 3+3, 7 = 4+3, 8 = 4+4, baris atas dapat sisa ganjil), tiap baris rata tengah sendiri. Lebar HUD tetap maksimal 288 gui px.
+- Baris bawah tetap di posisi kartu v3.0.7 (tidak dekat hati/hunger). Angka mana, bar, dan baris atas naik 38 gui px lewat font berakhiran `_u` (glyph dan kode karakter sama, hanya posisi vertikal beda). Mode satu baris tidak memakai font `_u`.
+- `HudLayout.MAX_CARDS` 5 -> 8 (kartu per halaman). Lebih dari 8 skill tetap pindah halaman otomatis (`settings.hud-page-seconds`), penanda `2/3` kini ikut naik bersama angka mana. Komentar `config.yml` dan `Hud.java` disesuaikan.
+- Baru: isi bar jadi merah kalau mana 20 persen atau kurang dari max (`HudLayout.LOW_RATIO`, angka ini keputusan saya, ubah kalau mau). Glyph `\uE003`.
+- Baru: kartu amber (glyph `\uE012`) untuk skill yang cooldown-nya selesai tapi mana tidak cukup. Cooldown tetap merah, siap tetap hijau. Angka cost tetap merah seperti sebelumnya.
+- Tidak berubah: `HudMetrics.java` identik byte per byte dengan v3.0.7 (lebar glyph sama), `Hud.java` hanya komentar, tanda tangan `HudLayout.build` sama.
+- Diuji: `HudLayout` dikompilasi terpisah, 259 skenario (0..20 skill, semua halaman, mana 0..500, cooldown, mana kurang, nama panjang) dirender dengan lebar glyph asli dari pack. Hasil: 0 glyph hilang, total lebar = lebar konten, tepi kiri dan kanan tiap baris simetris (selisih 0 gui px), muatan actionbar sekitar 3.5 ribu karakter.
+- BELUM DITES di client dan server asli. `Hud`, `Mana`, `SkillService`, `SttEngine` tidak dikompilasi (sandbox tidak punya Paper API).
+- Tinggi HUD dua baris sekitar 108 gui px di atas posisi actionbar (puncak sekitar 173 gui px dari bawah layar). Di layar sangat pendek (GUI scale sangat besar) bagian atas bisa mendekati crosshair. Kalau terjadi, turunkan GUI scale atau pakai satu baris (maks 5 skill).

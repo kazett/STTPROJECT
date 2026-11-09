@@ -79,13 +79,16 @@ def crystal(base, cx, cy, rx, ry, light="#9FE0FF", mid="#3A78FF", dark="#1B3AA0"
     pts = diamond(cx, cy, rx, ry)
     m = mask_poly(w, h, pts)
     paste_fill(base, erode(m, 0.0) if False else m, grad(w, h, [(0, light), (0.5, mid), (1, dark)]))
-    d = ImageDraw.Draw(base, "RGBA")
+    # ImageDraw pada gambar RGBA MENIMPA piksel (alpha ikut tertimpa, jadi muncul lubang). Gambar di layer terpisah lalu alpha_composite.
+    layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
     c = (cx * K, cy * K)
     lw = max(1, int(0.18 * K))
     for p in pts:
         d.line([c, (p[0] * K, p[1] * K)], fill=(220, 245, 255, 150), width=lw)
     d.polygon([(cx * K, (cy - ry) * K), (cx * K, cy * K), ((cx - rx) * K, cy * K)], fill=(255, 255, 255, 70))
     d.line([(p[0] * K, p[1] * K) for p in pts + [pts[0]]], fill=hexc("#0B1747", 230), width=lw)
+    base.alpha_composite(layer)
 
 # ---------------------------------------------------------------- BAR
 BAR_W, BAR_H = 180, 22
@@ -93,6 +96,7 @@ CARD_W, CARD_H = 56, 32
 DRAW_W = 52                              # kartu digambar 52 lalu direntang ke CARD_W
 GAP = 3
 CELL_H = BAR_H + GAP + CARD_H           # 57, bar di atas, kartu di bawah
+ROW_SHIFT = 38
 HOLE = (25.0, 7.0, 165.0, 15.0)         # lubang rel (tempat bar isi)
 FILL_X0, FILL_UNIT, FILL_MAX = 26, 2, 69
 FILL_Y0, FILL_Y1 = 6.8, 15.2
@@ -114,9 +118,11 @@ def bar_frame():
     glow.putalpha(ga)
     img.alpha_composite(glow)
     # lingkaran cahaya di belakang kristal
-    d = ImageDraw.Draw(img, "RGBA")
+    ring_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(ring_layer)
     for r, a in ((10.6, 150), (9.2, 90)):
         d.ellipse([(13 - r) * K, (11 - r) * K, (13 + r) * K, (11 + r) * K], outline=hexc("#5C8CFF", a), width=int(0.35 * K))
+    img.alpha_composite(ring_layer)
     body = ImageChops.subtract(solid_shape, hole)
     shape_with_outline(img, body, SILVER)
     # garis dalam tipis di sekeliling lubang
@@ -132,8 +138,11 @@ def bar_frame():
     crystal(img, 12.5, 11, 7.2, 8.2)
     crystal(img, 173, 11, 2.6, 3.2)
     # titik kecil bercahaya
+    dots = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(dots)
     for x, y in ((6, 3), (4, 17), (24, 2.5), (168, 5)):
         d.ellipse([(x - .25) * K, (y - .25) * K, (x + .25) * K, (y + .25) * K], fill=(150, 200, 255, 220))
+    img.alpha_composite(dots)
     return finish(img, wg, hg)
 
 def bar_bg():
@@ -144,19 +153,23 @@ def bar_bg():
     paste_fill(img, m, grad(w, h, [(0.25, "#040A22"), (0.5, "#0A1A55"), (0.7, "#0F2A7A")]))
     return finish(img, wg, hg)
 
-def bar_fill_tile():
+def bar_fill_tile(low=False):
     """Satu ubin isi bar, lebar FILL_UNIT gui px, tinggi sama dengan cell glyph bar (diratakan atas)."""
     w, h = FILL_UNIT * S, BAR_H * S
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     y0, y1 = int(FILL_Y0 * S), int(FILL_Y1 * S)
     stops = [(0, "#8EC8FF"), (0.18, "#4F95FF"), (0.5, "#2C63F0"), (0.85, "#1B3FBE"), (1, "#14308F")]
+    shine = (210, 235, 255, 255)
+    if low:
+        stops = [(0, "#FFA08E"), (0.18, "#FF5F4F"), (0.5, "#E8323A"), (0.85, "#B81C2C"), (1, "#841024")]
+        shine = (255, 220, 212, 255)
     band = grad(w, y1 - y0, stops)
     img.paste(band, (0, y0))
     # garis kilau tipis
     px = img.load()
     ky = y0 + int((y1 - y0) * 0.28)
     for x in range(w):
-        px[x, ky] = (210, 235, 255, 255)
+        px[x, ky] = shine
     return img
 
 # ---------------------------------------------------------------- CARD
@@ -168,6 +181,10 @@ def card(variant):
         inner_top, inner_bot, rim_c = "#03231A", "#0B6A3A", "#2DFF86"
         glow_a, glow_b = "#25FF7A", "#3C78FF"
         floor = (40, 255, 130)
+    elif variant == "low":
+        inner_top, inner_bot, rim_c = "#2A1904", "#7A4A0A", "#FFB02E"
+        glow_a, glow_b = "#FFB02E", "#FF6A1F"
+        floor = (255, 176, 46)
     else:
         inner_top, inner_bot, rim_c = "#26040F", "#7A1022", "#FF3355"
         glow_a, glow_b = "#FF2A4A", "#9A5BFF"
@@ -207,12 +224,14 @@ def card(variant):
     lay2.putalpha(ImageChops.multiply(rad, hole))
     img.alpha_composite(lay2)
     # garis pemisah + berlian kecil, garis atas baris bawah
-    d = ImageDraw.Draw(img, "RGBA")
+    deco = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(deco)
     lw = max(1, int(0.2 * K))
     d.line([(7 * K, 14.9 * K), (23.6 * K, 14.9 * K)], fill=floor + (110,), width=lw)
     d.line([(28.4 * K, 14.9 * K), (45 * K, 14.9 * K)], fill=floor + (110,), width=lw)
     d.polygon([(26 * K, 13.7 * K), (27.2 * K, 14.9 * K), (26 * K, 16.1 * K), (24.8 * K, 14.9 * K)], fill=floor + (230,))
     d.line([(5 * K, 23.2 * K), (47 * K, 23.2 * K)], fill=floor + (90,), width=lw)
+    img.alpha_composite(deco)
     crystal(img, 26, 4.2, 3.4, 3.6)
     return img.resize((CARD_W * S, hg * S), Image.LANCZOS)
 

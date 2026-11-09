@@ -22,8 +22,9 @@ import org.bukkit.scheduler.BukkitTask;
 /** Mana (di engine). Max dari settings.max-mana. Regen dan burnout dipertahankan dari sistem lama v2.3.6. */
 public final class Mana {
 
-    private static final double REGEN_AMOUNT = 3;
-    private static final double REGEN_SECONDS = 5;
+    /** Default regen: 5 mana tiap 2 detik (2.5/detik). Sistem lama 3 tiap 5 detik (0.6/detik) terasa terlalu lama. */
+    private static final double DEFAULT_REGEN_AMOUNT = 5;
+    private static final double DEFAULT_REGEN_SECONDS = 2;
     private static final long TICK = 10L;
     /** Mana di bawah ini dianggap habis. */
     private static final double EMPTY = 0.5;
@@ -71,7 +72,7 @@ public final class Mana {
     }
 
     public double max() {
-        return Math.max(1, plugin.getConfig().getDouble("settings.max-mana", 300));
+        return Math.max(1, plugin.getConfig().getDouble("settings.max-mana", 500));
     }
 
     public double get(UUID id) {
@@ -117,7 +118,9 @@ public final class Mana {
     }
 
     private void tick() {
-        double step = REGEN_AMOUNT / REGEN_SECONDS * (TICK / 20.0);
+        double amount = plugin.getConfig().getDouble("settings.mana-regen-amount", DEFAULT_REGEN_AMOUNT);
+        double seconds = Math.max(0.1, plugin.getConfig().getDouble("settings.mana-regen-seconds", DEFAULT_REGEN_SECONDS));
+        double step = amount / seconds * (TICK / 20.0);
         long now = System.currentTimeMillis();
         beat++;
         for (Player player : Bukkit.getOnlinePlayers()) {

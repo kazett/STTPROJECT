@@ -2,12 +2,17 @@
 # Angka skill (cost, cooldown, damage, dll) ada di config.yml plugin sttskill dan sttcustomskill.
 settings:
   # Max mana flat untuk semua player
-  max-mana: 300
+  max-mana: 500
+  # Regen mana: tambah mana-regen-amount tiap mana-regen-seconds detik (default 5 tiap 2 detik = 2.5 per detik).
+  mana-regen-amount: 5
+  mana-regen-seconds: 2
   # Jeda regen mana setelah pakai skill (detik). Dipertahankan dari sistem lama.
   mana-regen-delay: 3
   # Jeda regen kalau mana sampai habis (detik). Dipertahankan dari sistem lama.
   burnout-delay: 8
   # true = beri warning kalau ItemsAdder tidak aktif. STT tetap jalan tanpa ItemsAdder.
   itemsadder-integration: true
+  # Kalau skill lebih dari 8, kartu HUD tampil 8 per halaman dan ganti halaman tiap sekian detik (penanda "1/3" di kanan atas bar).
+  hud-page-seconds: 4
   # true = skill langsung jalan begitu mantra terdengar utuh (lebih cepat). false = tunggu pemain berhenti bicara. Butuh restart.
   fast-cast: true

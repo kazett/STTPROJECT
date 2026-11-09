@@ -24,6 +24,6 @@ final class HudMetrics {
     /** Lebar bersih glyph "0123456789.s" pada font stt:hud_cost. */
     static final int[] COST = {3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3};
     /** Lebar bersih glyph "0123456789/" pada font stt:hud_num. Spasi = 4. */
-    static final int[] NUM = {5, 3, 4, 5, 5, 5, 5, 4, 5, 5, 6};
+    static final int[] NUM = {7, 4, 6, 6, 6, 6, 6, 6, 6, 6, 8};
     static final int NUM_SPACE = 4;
 }

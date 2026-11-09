@@ -3,8 +3,8 @@
     {
       "type": "bitmap",
       "file": "stt:font/barnum.png",
-      "ascent": 57,
-      "height": 57,
+      "ascent": 70,
+      "height": 70,
       "chars": [
         "0123456789/"
       ]

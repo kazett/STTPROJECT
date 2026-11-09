@@ -28,6 +28,15 @@
       ]
     },
     {
+      "type": "bitmap",
+      "file": "stt:font/bar_fill_low.png",
+      "ascent": 57,
+      "height": 57,
+      "chars": [
+        "\ue003"
+      ]
+    },
+    {
       "type": "space",
       "advances": {
         "\ue300": 1,

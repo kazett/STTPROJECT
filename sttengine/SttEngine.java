@@ -60,9 +60,14 @@ public final class SttEngine extends JavaPlugin implements Listener {
         instance = this;
         saveDefaultConfig();
         getConfig().options().copyDefaults(true);
+        // v3.0.6: max-mana lama (300) tersimpan di config.yml server dan tidak ikut berubah oleh default, jadi diganti sekali ke 500.
+        if (getConfig().getInt("config-version", 0) < 2) {
+            getConfig().set("settings.max-mana", 500);
+            getConfig().set("config-version", 2);
+        }
         saveConfig();
 
-        store = new PlayerStore(getLogger(), getDataFolder(), () -> getConfig().getDouble("settings.max-mana", 300));
+        store = new PlayerStore(getLogger(), getDataFolder(), () -> getConfig().getDouble("settings.max-mana", 500));
         registry = new SkillRegistry(getLogger());
         mana = new Mana(this, store);
         mythic = new MythicHook(getLogger());

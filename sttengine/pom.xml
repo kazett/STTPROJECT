@@ -6,7 +6,7 @@
 
     <groupId>id.stt</groupId>
     <artifactId>sttengine</artifactId>
-    <version>3.0.5</version>
+    <version>3.0.8</version>
     <packaging>jar</packaging>
 
     <properties>

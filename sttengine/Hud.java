@@ -80,7 +80,10 @@ public final class Hud {
             cards.add(new HudLayout.Card(def.name(), skills.cooldownLeft(id, def), def.cost(), def.cooldown(),
                     mana.has(player, def.cost())));
         }
-        List<HudLayout.Run> runs = HudLayout.build(mana.get(id), mana.max(), cards);
+        // lebih dari 8 skill: halaman kartu berganti otomatis tiap settings.hud-page-seconds detik
+        double pageSeconds = Math.max(1, plugin.getConfig().getDouble("settings.hud-page-seconds", 4));
+        int page = (int) (System.currentTimeMillis() / (long) (pageSeconds * 1000));
+        List<HudLayout.Run> runs = HudLayout.build(mana.get(id), mana.max(), cards, page);
 
         StringBuilder view = new StringBuilder();
         for (HudLayout.Run run : runs) {
